@@ -1562,7 +1562,8 @@ function tagClassOf(name){
   return (TAX.classes && TAX.classes[name]) || "";
 }
 function renderTags(p){
-  var h = '<div class="tgh"><h4>分类标签' + (SRV.on ? "（点 × 删，点 ＋ 加）" : "") + "</h4></div>";
+  var h = '<div class="tgh"><h4>分类标签' +
+          (SRV.on ? "（多值点 × 删、＋ 加；单值用下拉或「改」）" : "") + "</h4></div>";
   h += '<div class="tg">';
   TAGF.forEach(function(f){
     var key = f[0], label = f[1], pk = f[2];
