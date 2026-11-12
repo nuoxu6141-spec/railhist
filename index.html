@@ -374,6 +374,13 @@ body.news-mode .filters,body.news-mode .wrap{display:none}
 .ftsum b{color:var(--accent);font-size:14px}
 .ftsum .ftall{margin-left:auto;font-size:11.5px;padding:2px 9px}
 .panel.kwlib{width:min(900px,94vw);max-height:86vh;display:flex;flex-direction:column}
+.panel.kwadd{width:min(720px,94vw)}
+.panel.kwadd textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;
+ padding:9px 11px;font:13px/1.7 inherit;resize:vertical;background:#fff}
+.kwaddrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.kwaddrow label{font-size:12px;color:var(--dim);display:flex;gap:6px;align-items:center}
+.kwaddrow select{border:1px solid var(--line);border-radius:5px;padding:4px 6px;background:#fff;font:inherit}
+#kwAddMsg.ok{color:#2f6b3f}
 .kwbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 10px}
 .kwbar input{flex:1;min-width:220px;border:1px solid var(--line);border-radius:6px;padding:7px 10px;font:inherit;background:#fff}
 .kwchips{display:flex;gap:6px;flex-wrap:wrap}
@@ -651,7 +658,7 @@ mark{background:rgba(255,196,0,.35);color:inherit;padding:0 1px;border-radius:2p
         <div class="grow">
           <button class="gact" data-run="import"><span class="gi">＋</span><b>导入</b><small>文件 / 只建条目</small></button>
           <button class="gact" data-run="import_cnki"><span class="gi">⇩</span><b>导入知网导出</b><small>data/inbox</small></button>
-          <button class="gact" data-run="kw_init"><span class="gi">#</span><b>加检索词</b><small>打开模板</small></button>
+          <button class="gact" id="btnKwAdd"><span class="gi">#</span><b>加检索词</b><small>填写后点添加</small></button>
           <button class="gact" id="btnKwLib"><span class="gi">✓</span><b>检索词库</b><small>查看可用检索词</small></button>
         </div>
       </div>
@@ -840,6 +847,29 @@ mark{background:rgba(255,196,0,.35);color:inherit;padding:0 1px;border-radius:2p
     <div class="kwchips" id="kwChips"></div>
   </div>
   <div class="kwlist" id="kwList"></div>
+</div></div>
+
+<div class="overlay" id="kwAddOverlay"><div class="panel kwadd">
+  <button id="closeKwAdd" class="xbtn">×</button>
+  <h3>加检索词</h3>
+  <p class="hint">一行一个；也可以写「词|类别|优先级」。加完点下面的「添加」按钮。</p>
+  <textarea id="kwAddText" rows="12" spellcheck="false" placeholder="例：中东铁路&#10;京奉铁路&#10;宓汝成（中国社科院经济所）"></textarea>
+  <div class="kwaddrow">
+    <label>类别
+      <select id="kwAddGroup">
+        <option value="">自动判断</option>
+        <option>线路</option><option>主题</option><option>人物</option>
+        <option>事件</option><option>机构</option><option>区域</option><option>外文</option>
+      </select>
+    </label>
+    <label>优先级
+      <select id="kwAddPri">
+        <option value="2">2 普通</option><option value="1">1 高</option><option value="3">3 低</option>
+      </select>
+    </label>
+    <button id="kwAddBtn" class="mini primary">添加</button>
+    <span id="kwAddMsg" class="hint"></span>
+  </div>
 </div></div>
 
 <div class="overlay" id="shareOverlay"><div class="panel share">
@@ -4018,6 +4048,70 @@ function openKwLib(){
     if(navigator.clipboard) navigator.clipboard.writeText(text);
     toast("已复制：" + text);
   });
+})();
+
+/* ================= 加检索词 ================= */
+function openKwAdd(){
+  var ov = document.getElementById("kwAddOverlay");
+  if(!ov) return;
+  ov.classList.add("on");
+  var ta = document.getElementById("kwAddText");
+  document.getElementById("kwAddMsg").textContent = "";
+  if(ta && !ta.value.trim()){
+    fetch("/api/keywords/template").then(function(r){ return r.json(); }).then(function(j){
+      if(ta && !ta.value.trim() && j && typeof j.text === "string") ta.value = j.text;
+      if(ta) ta.focus();
+    }).catch(function(){});
+  } else if(ta){
+    ta.focus();
+  }
+}
+
+(function bindKwAdd(){
+  var btn = document.getElementById("btnKwAdd");
+  var ov = document.getElementById("kwAddOverlay");
+  if(btn) btn.addEventListener("click", openKwAdd);
+  if(!ov) return;
+  document.getElementById("closeKwAdd").addEventListener("click", function(){ ov.classList.remove("on"); });
+  ov.addEventListener("click", function(ev){ if(ev.target === ov) ov.classList.remove("on"); });
+  document.getElementById("kwAddBtn").addEventListener("click", function(){
+    var b = this;
+    var text = document.getElementById("kwAddText").value || "";
+    var msg = document.getElementById("kwAddMsg");
+    if(!text.trim()){ msg.className = "hint"; msg.textContent = "先填几个词"; return; }
+    b.disabled = true;
+    msg.className = "hint";
+    msg.textContent = "添加中…";
+    fetch("/api/keywords/add", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text: text,
+                            group: document.getElementById("kwAddGroup").value,
+                            priority: document.getElementById("kwAddPri").value})})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        b.disabled = false;
+        if(!j || !j.ok){
+          msg.className = "hint";
+          msg.textContent = (j && j.message) || "添加失败";
+          return;
+        }
+        msg.className = "hint ok";
+        msg.textContent = "添加成功：" + j.added.length + " 个" +
+          (j.dup.length ? "（已存在 " + j.dup.length + " 个）" : "") +
+          "，现共 " + j.total + " 个";
+        document.getElementById("kwAddText").value = "";
+        KWROWS = null;
+        setTimeout(function(){
+          ov.classList.remove("on");
+          openKwLib();
+        }, 900);
+      })
+      .catch(function(e){
+        b.disabled = false;
+        msg.className = "hint";
+        msg.textContent = "添加失败：" + e;
+      });
+  });
+  if(/[?&]kwadd=1/.test(location.search)) openKwAdd();
 })();
 
 /* ---------------- 学科分析（量化报告） ---------------- */
