@@ -4000,7 +4000,7 @@ function renderKwLib(){
   });
   sum.textContent = rows.length ? ("共 " + rows.length + " 个词 · 可用 " +
     rows.filter(function(r){ return !r.dead; }).length + " · 暂停 " +
-    rows.filter(function(r){ return r.dead; }).length + " · 采集按使用次数从少到多选词 · 点词可复制") : "还没有检索词";
+    rows.filter(function(r){ return r.dead; }).length + " · 采集按使用次数从少到多选词（0 次在最上面）· 点词可复制") : "还没有检索词";
   if(!out.length){
     list.innerHTML = '<p class="hint" style="padding:18px 4px">没有匹配的词。</p>';
     return;
@@ -4023,7 +4023,13 @@ function openKwLib(){
   document.getElementById("kwSummary").textContent = "加载中…";
   fetch("/api/keywords").then(function(r){ return r.json(); }).then(function(j){
     KWROWS = (j && j.keywords) || [];
-    KWROWS.sort(function(a, b){ return (b.runs - a.runs) || (b.hits - a.hits); });
+    KWROWS.sort(function(a, b){
+      if((a.dead ? 1 : 0) !== (b.dead ? 1 : 0)) return (a.dead ? 1 : 0) - (b.dead ? 1 : 0);
+      var ua = (a.runs || 0) + (a.oa_runs || 0), ub = (b.runs || 0) + (b.oa_runs || 0);
+      if(ua !== ub) return ua - ub;
+      if((a.attempts || 0) !== (b.attempts || 0)) return (a.attempts || 0) - (b.attempts || 0);
+      return String(a.k).localeCompare(String(b.k), "zh");
+    });
     renderKwLib();
   }).catch(function(e){
     document.getElementById("kwSummary").textContent = "加载失败：" + e;
