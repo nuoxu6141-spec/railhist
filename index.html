@@ -387,7 +387,7 @@ body.news-mode .filters,body.news-mode .wrap{display:none}
 .kwchips span{cursor:pointer;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--dim);background:#fff}
 .kwchips span.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .kwlist{overflow:auto;flex:1;border-top:1px solid var(--line)}
-.kwrow{display:grid;grid-template-columns:minmax(150px,1fr) 240px 150px 100px;gap:8px;align-items:center;
+.kwrow{display:grid;grid-template-columns:minmax(150px,1fr) 240px 190px 100px;gap:8px;align-items:center;
  padding:7px 4px;border-bottom:1px solid #f4efe9;font-size:12.5px}
 .kwrow .kwcat,.kwrow .kwnum,.kwrow b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kwrow b{font-weight:600}
@@ -4009,7 +4009,8 @@ function renderKwLib(){
     var cat = [r.group, KWD[r.domain] || r.domain, r.cat].filter(Boolean).join(" · ");
     return '<div class="kwrow"><b title="点击复制" data-copy="' + esc(r.k) + '">' + esc(r.k) + "</b>" +
       '<span class="kwcat">' + esc(cat) + "</span>" +
-      '<span class="kwnum">试 ' + (r.attempts || 0) + " · 中 " + r.hits + "</span>" +
+      '<span class="kwnum">用 ' + (r.runs || 0) + " · 试 " + (r.attempts || 0) +
+        " · 中 " + r.hits + "</span>" +
       '<span class="kwcat">' + (r.last || "—") + (r.dead ? ' <i class="kwoff">暂停</i>' : "") + "</span></div>";
   }).join("");
 }
