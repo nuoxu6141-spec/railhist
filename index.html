@@ -3502,8 +3502,6 @@ function netMount(){
   }, {passive: false});
   var box = document.getElementById("viewNews");
   box.addEventListener("click", function(ev){
-    var t = closestEv(ev.target, "[data-ntab]");
-    if(t){ NET_TAB = t.getAttribute("data-ntab"); renderNews(); return; }
     var m = closestEv(ev.target, "[data-netmode]");
     if(m){
       NET.mode = m.getAttribute("data-netmode");
@@ -3695,6 +3693,28 @@ function netMount(){
         toast("启动失败：" + e);
       });
   });
+})();
+
+/* 学术日报 / 关联网 子标签：常驻监听，不能等 netMount 才绑 */
+(function newsSubtabs(){
+  var box = document.getElementById("viewNews");
+  if(!box) return;
+  var m = (location.search.match(/[?&]ntab=(news|net)/) || [])[1];
+  if(m) NET_TAB = m;
+  box.addEventListener("click", function(ev){
+    var t = closestEv(ev.target, "[data-ntab]");
+    if(!t) return;
+    ev.preventDefault();
+    NET_TAB = t.getAttribute("data-ntab");
+    renderNews();
+  });
+  if(m && CURVIEW === "news") renderNews();
+  if(/[?&]autoclick=net/.test(location.search)){
+    setTimeout(function(){
+      var el = document.querySelector('[data-ntab="net"]');
+      if(el) el.click();
+    }, 300);
+  }
 })();
 
 /* ---------------- 学科分析（量化报告） ---------------- */
