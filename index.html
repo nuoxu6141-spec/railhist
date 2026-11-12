@@ -3964,7 +3964,7 @@ function renderKwLib(){
   });
   sum.textContent = rows.length ? ("共 " + rows.length + " 个词 · 可用 " +
     rows.filter(function(r){ return !r.dead; }).length + " · 暂停 " +
-    rows.filter(function(r){ return r.dead; }).length + " · 点词可复制") : "还没有检索词";
+    rows.filter(function(r){ return r.dead; }).length + " · 采集按使用次数从少到多选词 · 点词可复制") : "还没有检索词";
   if(!out.length){
     list.innerHTML = '<p class="hint" style="padding:18px 4px">没有匹配的词。</p>';
     return;
