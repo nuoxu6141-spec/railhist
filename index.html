@@ -499,6 +499,9 @@ mark{background:rgba(255,196,0,.35);color:inherit;padding:0 1px;border-radius:2p
 .kl{font-size:12px;color:var(--dim);margin-top:3px}
 .kn{font-size:11px;color:#a89c92;margin-top:1px}
 .anKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0 4px}
+.anLead{background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);
+ border-radius:8px;padding:10px 14px;font-size:13.5px;line-height:1.85;margin:14px 0 2px}
+.anLead b{color:var(--accent);margin-right:8px}
 .anRow2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 .anRow2 .anSec{margin-top:20px}
 .anChart{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}
@@ -4071,6 +4074,12 @@ function renderAnalysis(){
     anKpi("近五年", anNum(recent), "前五年 " + anNum(prev)) +
     anKpi("峰值年份", peak.y || "—", anNum(peak.n || 0) + " 篇") +
     "</div>";
+
+  h += '<div class="anLead"><b>一句话</b>共 ' + anNum(total) + " 篇，" +
+    (langs[0] ? langs[0].k : "中文") + "文献最多；" +
+    (themes[0] ? "“" + themes[0].k + "”是最大主题；" : "") +
+    "近五年是前五年的 " + (recent / Math.max(1, prev)).toFixed(1) + " 倍；页码著录率仅 " +
+    (ql.pages || 0) + "%，是最需要补的字段。</div>";
 
   h += anSec("anGrowth", "年度趋势", "每年新增文献数；2015 年后增长明显",
     '<div class="anChart">' + anLine(byYear) + "</div>" +
