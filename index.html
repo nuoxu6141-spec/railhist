@@ -395,9 +395,13 @@ body.news-mode .filters,body.news-mode .wrap{display:none}
 .ftsum{margin:2px 0 6px;font-size:12.5px;color:var(--dim);display:flex;align-items:center;gap:8px}
 .ftsum b{color:var(--accent);font-size:14px}
 .ftsum .ftall{margin-left:auto;font-size:11.5px;padding:2px 9px}
-.panel.kwlib{width:min(900px,94vw);max-height:86vh;display:flex;flex-direction:column}
+.panel.kwlib{width:min(960px,94vw);max-height:88vh;display:flex;flex-direction:column}
 .panel.kwadd{width:min(720px,94vw)}
-.panel.kwadd textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;
+.kwaddbox{border:1px dashed var(--line);border-radius:8px;padding:8px 12px;margin:4px 0 12px;
+  background:var(--panel);flex:0 0 auto}
+.kwaddbox summary{cursor:pointer;font-weight:600;color:var(--accent);font-size:13.5px}
+.kwaddbox[open] summary{margin-bottom:8px}
+.panel.kwlib textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;
  padding:9px 11px;font:13px/1.7 inherit;resize:vertical;background:#fff}
 .kwaddrow{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .kwaddrow label{font-size:12px;color:var(--dim);display:flex;gap:6px;align-items:center}
@@ -409,13 +413,24 @@ body.news-mode .filters,body.news-mode .wrap{display:none}
 .kwchips span{cursor:pointer;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--dim);background:#fff}
 .kwchips span.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .kwlist{overflow:auto;flex:1;border-top:1px solid var(--line)}
-.kwrow{display:grid;grid-template-columns:minmax(150px,1fr) 240px 190px 100px;gap:8px;align-items:center;
+.kwrow{display:grid;grid-template-columns:minmax(150px,1fr) 210px 175px 105px 82px;gap:8px;align-items:center;
  padding:7px 4px;border-bottom:1px solid #f4efe9;font-size:12.5px}
 .kwrow .kwcat,.kwrow .kwnum,.kwrow b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kwrow b{font-weight:600}
 .kwrow .kwcat{color:var(--dim)}
 .kwrow .kwnum{color:var(--dim);font-variant-numeric:tabular-nums;text-align:right}
 .kwrow .kwoff{color:#a33;font-size:11px;border:1px solid #e3b7b7;border-radius:4px;padding:1px 5px}
+.kwacts{display:flex;gap:8px;justify-content:flex-end}
+.kwacts i{cursor:pointer;font-style:normal;color:var(--dim);font-size:12px}
+.kwacts i:hover{color:var(--accent)}
+.kwrow.kwedit{grid-template-columns:minmax(140px,1fr) 110px 70px 80px 130px}
+.kwedit input,.kwedit select{width:100%;box-sizing:border-box;border:1px solid var(--line);
+  border-radius:6px;padding:4px 6px;background:var(--bg);color:var(--ink);font:inherit;font-size:13px}
+.panel.exp{width:min(560px,94vw)}
+.exprow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0;font-size:13px}
+.exprow label{display:flex;gap:8px;align-items:center;color:var(--dim)}
+.exprow select{border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--bg);
+  color:var(--ink);font:inherit}
 .impmanual{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0 4px}
 .impmanual .hint{margin:0}
 .impmeta{margin:10px 0 4px;border:1px dashed var(--line);border-radius:8px;padding:8px 10px}
@@ -702,9 +717,7 @@ mark{background:rgba(255,196,0,.35);color:inherit;padding:0 1px;border-radius:2p
         <div class="ggh">导入与录入</div>
         <div class="grow">
           <button class="gact" data-run="import"><span class="gi">＋</span><b>导入</b><small>文件 / 只建条目</small></button>
-          <button class="gact" data-run="import_cnki"><span class="gi">⇩</span><b>导入知网导出</b><small>data/inbox</small></button>
-          <button class="gact" id="btnKwAdd"><span class="gi">#</span><b>加检索词</b><small>填写后点添加</small></button>
-          <button class="gact" id="btnKwLib"><span class="gi">✓</span><b>检索词库</b><small>查看可用检索词</small></button>
+          <button class="gact" id="btnKwLib"><span class="gi">#</span><b>检索词库</b><small>查看 / 添加 / 修改</small></button>
         </div>
       </div>
 
@@ -736,6 +749,7 @@ mark{background:rgba(255,196,0,.35);color:inherit;padding:0 1px;border-radius:2p
     </select>
     <button id="btnGate" title="回到封面">封面</button>
     <button id="btnImport">导入</button>
+    <button id="btnExport">导出</button>
     <button id="btnShare">分享</button>
     <button id="btnTax" hidden>维护分类</button>
     <button id="btnReset">重置筛选</button>
@@ -892,6 +906,27 @@ mark{background:rgba(255,196,0,.35);color:inherit;padding:0 1px;border-radius:2p
   <button id="closeKw" class="xbtn">×</button>
   <h3>检索词库</h3>
   <p class="hint" id="kwSummary">加载中…</p>
+  <details class="kwaddbox">
+    <summary>＋ 添加检索词</summary>
+    <p class="hint">一行一个；也可以写「词|类别|优先级」。</p>
+    <textarea id="kwAddText" rows="5" spellcheck="false" placeholder="例：中东铁路&#10;京奉铁路&#10;宓汝成（中国社科院经济所）"></textarea>
+    <div class="kwaddrow">
+      <label>类别
+        <select id="kwAddGroup">
+          <option value="">自动判断</option>
+          <option>线路</option><option>主题</option><option>人物</option>
+          <option>事件</option><option>机构</option><option>区域</option><option>外文</option>
+        </select>
+      </label>
+      <label>优先级
+        <select id="kwAddPri">
+          <option value="2">2 普通</option><option value="1">1 高</option><option value="3">3 低</option>
+        </select>
+      </label>
+      <button id="kwAddBtn" class="mini primary">添加</button>
+      <span id="kwAddMsg" class="hint"></span>
+    </div>
+  </details>
   <div class="kwbar">
     <input id="kwSearch" placeholder="搜词或类别，如：中东铁路 / 线路">
     <div class="kwchips" id="kwChips"></div>
@@ -899,27 +934,27 @@ mark{background:rgba(255,196,0,.35);color:inherit;padding:0 1px;border-radius:2p
   <div class="kwlist" id="kwList"></div>
 </div></div>
 
-<div class="overlay" id="kwAddOverlay"><div class="panel kwadd">
-  <button id="closeKwAdd" class="xbtn">×</button>
-  <h3>加检索词</h3>
-  <p class="hint">一行一个；也可以写「词|类别|优先级」。加完点下面的「添加」按钮。</p>
-  <textarea id="kwAddText" rows="12" spellcheck="false" placeholder="例：中东铁路&#10;京奉铁路&#10;宓汝成（中国社科院经济所）"></textarea>
-  <div class="kwaddrow">
-    <label>类别
-      <select id="kwAddGroup">
-        <option value="">自动判断</option>
-        <option>线路</option><option>主题</option><option>人物</option>
-        <option>事件</option><option>机构</option><option>区域</option><option>外文</option>
-      </select>
-    </label>
-    <label>优先级
-      <select id="kwAddPri">
-        <option value="2">2 普通</option><option value="1">1 高</option><option value="3">3 低</option>
-      </select>
-    </label>
-    <button id="kwAddBtn" class="mini primary">添加</button>
-    <span id="kwAddMsg" class="hint"></span>
-  </div>
+<div class="overlay" id="expOverlay"><div class="panel exp">
+  <button id="closeExp" class="xbtn">×</button>
+  <h3>导出文献</h3>
+  <p class="hint">导出当前库里的条目（含规范引用）。大范围导出建议选 BibTeX 或 CSV。</p>
+  <div class="exprow"><label>范围
+    <select id="expScope">
+      <option value="filter">当前筛选结果</option>
+      <option value="picked">已勾选的条目</option>
+      <option value="all">全部在册</option>
+    </select></label></div>
+  <div class="exprow"><label>格式
+    <select id="expFmt">
+      <option value="bibtex">BibTeX（.bib）</option>
+      <option value="ris">RIS（.ris）</option>
+      <option value="csv">CSV（Excel 可开）</option>
+      <option value="txt">引用单（纯文本）</option>
+      <option value="docx">引用单（Word，≤1500 条）</option>
+    </select></label></div>
+  <p class="hint" id="expCount"></p>
+  <div class="exprow"><button class="mini primary" id="expGo">导出</button>
+    <span id="expMsg" class="hint"></span></div>
 </div></div>
 
 <div class="overlay" id="shareOverlay"><div class="panel share">
@@ -1096,6 +1131,11 @@ function pingServer(){
       // 专题/选题雷达同理：连上之前渲染会少掉「建为专题」这类要写权限的按钮
       if(typeof CURVIEW !== "undefined" && CURVIEW === "topic"){
         try { if(typeof renderTopicView === "function") renderTopicView(); } catch(e){}
+      }
+      // 检索词库弹层：深链 ?kwlib=1 会在 ping 之前打开，改/删按钮同样会缺席
+      var kwo = document.getElementById("kwOverlay");
+      if(kwo && kwo.classList.contains("on")){
+        try { if(typeof renderKwLib === "function") renderKwLib(); } catch(e){}
       }
     }   // 有服务才能露出「正文」这一层
     modeBar();
@@ -4147,10 +4187,38 @@ function impFormMeta(){
   });
 })();
 
-/* ================= 检索词库 ================= */
-var KWROWS = null, KWG = "全部", KWQ = "";
+/* ================= 检索词库（增删改一体） ================= */
+var KWROWS = null, KWG = "全部", KWQ = "", KWEDIT = null;
 var KWD = {A: "线路", B: "资本", C: "路权", D: "制度", E: "运营",
            F: "经济", G: "社会", H: "文化", I: "学术", W: "世界"};
+var KWG_LIST = ["线路", "主题", "人物", "事件", "机构", "区域", "外文"];
+
+function kwSorted(rows){
+  return rows.slice().sort(function(a, b){
+    if((a.dead ? 1 : 0) !== (b.dead ? 1 : 0)) return (a.dead ? 1 : 0) - (b.dead ? 1 : 0);
+    var ua = (a.runs || 0) + (a.oa_runs || 0), ub = (b.runs || 0) + (b.oa_runs || 0);
+    if(ua !== ub) return ua - ub;
+    if((a.attempts || 0) !== (b.attempts || 0)) return (a.attempts || 0) - (b.attempts || 0);
+    return String(a.k).localeCompare(String(b.k), "zh");
+  });
+}
+
+function kwEditRow(r){
+  var gs = KWG_LIST.map(function(g){
+    return "<option" + (g === r.group ? " selected" : "") + ">" + esc(g) + "</option>";
+  }).join("");
+  var ps = [1, 2, 3].map(function(p){
+    return "<option value=\"" + p + "\"" + (p === (r.priority || 2) ? " selected" : "") + ">" + p + "</option>";
+  }).join("");
+  return '<div class="kwrow kwedit">' +
+    '<input class="kwe-k" value="' + esc(r.k) + '">' +
+    '<select class="kwe-g">' + gs + "</select>" +
+    '<select class="kwe-p">' + ps + "</select>" +
+    '<select class="kwe-d"><option value="">可用</option>' +
+      '<option value="1"' + (r.dead ? " selected" : "") + '>暂停</option></select>' +
+    '<button class="mini" data-kwsave="' + esc(r.k) + '">保存</button>' +
+    '<button class="mini" data-kwcancel="1">取消</button></div>';
+}
 
 function renderKwLib(){
   var list = document.getElementById("kwList");
@@ -4174,19 +4242,35 @@ function renderKwLib(){
   });
   sum.textContent = rows.length ? ("共 " + rows.length + " 个词 · 可用 " +
     rows.filter(function(r){ return !r.dead; }).length + " · 暂停 " +
-    rows.filter(function(r){ return r.dead; }).length + " · 采集按使用次数从少到多选词（0 次在最上面）· 点词可复制") : "还没有检索词";
+    rows.filter(function(r){ return r.dead; }).length +
+    " · 采集按使用次数从少到多选词 · 点词可复制，右侧可改/删") : "还没有检索词";
   if(!out.length){
     list.innerHTML = '<p class="hint" style="padding:18px 4px">没有匹配的词。</p>';
     return;
   }
   list.innerHTML = out.map(function(r){
+    if(KWEDIT === r.k) return kwEditRow(r);
     var cat = [r.group, KWD[r.domain] || r.domain, r.cat].filter(Boolean).join(" · ");
     return '<div class="kwrow"><b title="点击复制" data-copy="' + esc(r.k) + '">' + esc(r.k) + "</b>" +
       '<span class="kwcat">' + esc(cat) + "</span>" +
       '<span class="kwnum">用 ' + (r.runs || 0) + " · 试 " + (r.attempts || 0) +
         " · 中 " + r.hits + (r.oa_runs ? " · OA " + r.oa_runs : "") + "</span>" +
-      '<span class="kwcat">' + (r.last || "—") + (r.dead ? ' <i class="kwoff">暂停</i>' : "") + "</span></div>";
+      '<span class="kwcat">' + (r.last || "—") + (r.dead ? ' <i class="kwoff">暂停</i>' : "") + "</span>" +
+      (SRV.on ? '<span class="kwacts"><i data-kwedit="' + esc(r.k) + '">改</i>' +
+        '<i data-kwdel="' + esc(r.k) + '">删</i></span>' : "") +
+      "</div>";
   }).join("");
+}
+
+function loadKwRows(){
+  document.getElementById("kwSummary").textContent = "加载中…";
+  fetch("/api/keywords").then(function(r){ return r.json(); }).then(function(j){
+    KWROWS = kwSorted((j && j.keywords) || []);
+    KWEDIT = null;
+    renderKwLib();
+  }).catch(function(e){
+    document.getElementById("kwSummary").textContent = "加载失败：" + e;
+  });
 }
 
 function openKwLib(){
@@ -4194,20 +4278,39 @@ function openKwLib(){
   if(!ov) return;
   ov.classList.add("on");
   if(KWROWS){ renderKwLib(); return; }
-  document.getElementById("kwSummary").textContent = "加载中…";
-  fetch("/api/keywords").then(function(r){ return r.json(); }).then(function(j){
-    KWROWS = (j && j.keywords) || [];
-    KWROWS.sort(function(a, b){
-      if((a.dead ? 1 : 0) !== (b.dead ? 1 : 0)) return (a.dead ? 1 : 0) - (b.dead ? 1 : 0);
-      var ua = (a.runs || 0) + (a.oa_runs || 0), ub = (b.runs || 0) + (b.oa_runs || 0);
-      if(ua !== ub) return ua - ub;
-      if((a.attempts || 0) !== (b.attempts || 0)) return (a.attempts || 0) - (b.attempts || 0);
-      return String(a.k).localeCompare(String(b.k), "zh");
-    });
-    renderKwLib();
-  }).catch(function(e){
-    document.getElementById("kwSummary").textContent = "加载失败：" + e;
-  });
+  loadKwRows();
+}
+
+function kwSaveRow(oldK){
+  var row = document.querySelector(".kwrow.kwedit");
+  if(!row) return;
+  var nk = row.querySelector(".kwe-k").value.trim();
+  var g = row.querySelector(".kwe-g").value;
+  var pri = row.querySelector(".kwe-p").value;
+  var dead = row.querySelector(".kwe-d").value === "1";
+  if(!nk){ toast("词不能为空"); return; }
+  fetch("/api/keywords/edit", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({k: oldK, new_k: nk, group: g, priority: pri, dead: dead})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(!j || !j.ok){ toast((j && j.message) || "保存失败"); return; }
+      toast("已保存");
+      KWROWS = null; loadKwRows();
+    })
+    .catch(function(e){ toast("保存失败：" + e); });
+}
+
+function kwDelRow(k){
+  if(!confirm("删除检索词「" + k + "」？历史计数会一起消失。")) return;
+  fetch("/api/keywords/del", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({k: k})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(!j || !j.ok){ toast((j && j.message) || "删除失败"); return; }
+      toast("已删除：" + k);
+      KWROWS = null; loadKwRows();
+    })
+    .catch(function(e){ toast("删除失败：" + e); });
 }
 
 (function bindKwLib(){
@@ -4229,38 +4332,21 @@ function openKwLib(){
   });
   if(/[?&]kwlib=1/.test(location.search)) openKwLib();
   document.getElementById("kwList").addEventListener("click", function(ev){
-    var t = closestEv(ev.target, "[data-copy]");
-    if(!t) return;
-    var text = t.getAttribute("data-copy");
-    if(navigator.clipboard) navigator.clipboard.writeText(text);
-    toast("已复制：" + text);
+    var cp = closestEv(ev.target, "[data-copy]");
+    if(cp){
+      var text = cp.getAttribute("data-copy");
+      if(navigator.clipboard) navigator.clipboard.writeText(text);
+      toast("已复制：" + text);
+      return;
+    }
+    var ed = closestEv(ev.target, "[data-kwedit]");
+    if(ed){ KWEDIT = ed.getAttribute("data-kwedit"); renderKwLib(); return; }
+    var del = closestEv(ev.target, "[data-kwdel]");
+    if(del){ kwDelRow(del.getAttribute("data-kwdel")); return; }
+    var sv = closestEv(ev.target, "[data-kwsave]");
+    if(sv){ kwSaveRow(sv.getAttribute("data-kwsave")); return; }
+    if(closestEv(ev.target, "[data-kwcancel]")){ KWEDIT = null; renderKwLib(); return; }
   });
-})();
-
-/* ================= 加检索词 ================= */
-function openKwAdd(){
-  var ov = document.getElementById("kwAddOverlay");
-  if(!ov) return;
-  ov.classList.add("on");
-  var ta = document.getElementById("kwAddText");
-  document.getElementById("kwAddMsg").textContent = "";
-  if(ta && !ta.value.trim()){
-    fetch("/api/keywords/template").then(function(r){ return r.json(); }).then(function(j){
-      if(ta && !ta.value.trim() && j && typeof j.text === "string") ta.value = j.text;
-      if(ta) ta.focus();
-    }).catch(function(){});
-  } else if(ta){
-    ta.focus();
-  }
-}
-
-(function bindKwAdd(){
-  var btn = document.getElementById("btnKwAdd");
-  var ov = document.getElementById("kwAddOverlay");
-  if(btn) btn.addEventListener("click", openKwAdd);
-  if(!ov) return;
-  document.getElementById("closeKwAdd").addEventListener("click", function(){ ov.classList.remove("on"); });
-  ov.addEventListener("click", function(ev){ if(ev.target === ov) ov.classList.remove("on"); });
   document.getElementById("kwAddBtn").addEventListener("click", function(){
     var b = this;
     var text = document.getElementById("kwAddText").value || "";
@@ -4276,21 +4362,13 @@ function openKwAdd(){
       .then(function(r){ return r.json(); })
       .then(function(j){
         b.disabled = false;
-        if(!j || !j.ok){
-          msg.className = "hint";
-          msg.textContent = (j && j.message) || "添加失败";
-          return;
-        }
+        if(!j || !j.ok){ msg.textContent = (j && j.message) || "添加失败"; return; }
         msg.className = "hint ok";
         msg.textContent = "添加成功：" + j.added.length + " 个" +
           (j.dup.length ? "（已存在 " + j.dup.length + " 个）" : "") +
           "，现共 " + j.total + " 个";
         document.getElementById("kwAddText").value = "";
-        KWROWS = null;
-        setTimeout(function(){
-          ov.classList.remove("on");
-          openKwLib();
-        }, 900);
+        KWROWS = null; loadKwRows();
       })
       .catch(function(e){
         b.disabled = false;
@@ -4298,8 +4376,74 @@ function openKwAdd(){
         msg.textContent = "添加失败：" + e;
       });
   });
-  if(/[?&]kwadd=1/.test(location.search)) openKwAdd();
 })();
+
+/* ================= 导出 ================= */
+function expIds(){
+  var scope = (document.getElementById("expScope") || {}).value || "filter";
+  if(scope === "all") return P.map(function(p){ return p.id; });
+  if(scope === "picked"){
+    try { return pickedIds(); } catch(e) { return []; }
+  }
+  try { return P.filter(match).map(function(p){ return p.id; }); }
+  catch(e){ return P.map(function(p){ return p.id; }); }
+}
+function expRefreshCount(){
+  var el = document.getElementById("expCount");
+  if(!el) return;
+  var ids = expIds();
+  var fmt = (document.getElementById("expFmt") || {}).value || "bibtex";
+  el.textContent = "将导出 " + ids.length + " 条" +
+    (fmt === "docx" && ids.length > 1500 ? "（Word 上限 1500 条，请先筛选）" : "");
+}
+function openExp(){
+  if(!SRV.on){ toast("导出需要本地服务：双击「铁路史库.bat」"); return; }
+  var ov = document.getElementById("expOverlay");
+  if(!ov) return;
+  ov.classList.add("on");
+  document.getElementById("expMsg").textContent = "";
+  expRefreshCount();
+}
+function doExport(){
+  var ids = expIds();
+  var fmt = document.getElementById("expFmt").value;
+  var msg = document.getElementById("expMsg");
+  if(!ids.length){ msg.textContent = "没有可导出的条目"; return; }
+  if(fmt === "docx" && ids.length > 1500){ msg.textContent = "Word 上限 1500 条，请先筛选"; return; }
+  msg.textContent = "生成中…（" + ids.length + " 条）";
+  fetch("/api/export", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ids: ids, fmt: fmt})})
+    .then(function(r){
+      var ct = r.headers.get("Content-Type") || "";
+      if(ct.indexOf("application/json") >= 0){
+        return r.json().then(function(j){ throw new Error((j && j.message) || "导出失败"); });
+      }
+      var ext = {bibtex: "bib", ris: "ris", csv: "csv", txt: "txt", docx: "docx"}[fmt] || "txt";
+      return r.blob().then(function(b){ return {blob: b, ext: ext}; });
+    })
+    .then(function(o){
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(o.blob);
+      a.download = "铁路史文献_" + new Date().toISOString().slice(0, 10).replace(/-/g, "") + "." + o.ext;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 3000);
+      msg.textContent = "已导出 " + ids.length + " 条";
+    })
+    .catch(function(e){ msg.textContent = "失败：" + e.message; });
+}
+(function bindExport(){
+  var b = document.getElementById("btnExport");
+  var ov = document.getElementById("expOverlay");
+  if(b) b.addEventListener("click", openExp);
+  if(!ov) return;
+  document.getElementById("closeExp").addEventListener("click", function(){ ov.classList.remove("on"); });
+  ov.addEventListener("click", function(ev){ if(ev.target === ov) ov.classList.remove("on"); });
+  document.getElementById("expScope").addEventListener("change", expRefreshCount);
+  document.getElementById("expFmt").addEventListener("change", expRefreshCount);
+  document.getElementById("expGo").addEventListener("click", doExport);
+  if(/[?&]export=1/.test(location.search)) openExp();
+})();
+
 
 /* ---------------- 资源库文献情况（量化报告） ---------------- */
 var AN = DB.an || {};
