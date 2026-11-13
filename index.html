@@ -603,6 +603,11 @@ mark{background:rgba(255,196,0,.35);color:inherit;padding:0 1px;border-radius:2p
 .gapchip{cursor:pointer;padding:4px 12px;border:1px solid var(--line);border-radius:999px;
   font-size:13px;color:var(--dim);background:var(--panel)}
 .gapchip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.gapfilters{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 16px;
+  padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font-size:13px}
+.gapfilters label{display:flex;align-items:center;gap:6px;color:var(--dim)}
+.gapfilters select{padding:3px 8px;border:1px solid var(--line);border-radius:6px;
+  background:var(--bg);color:var(--ink);font:inherit;max-width:220px}
 .gapcard{border:1px solid var(--line);border-radius:10px;background:var(--panel);
   padding:14px 16px;margin-bottom:12px}
 .ghead{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -1087,6 +1092,10 @@ function pingServer(){
       // 否则「我看到的」输入框、删除按钮都不会出现
       if(typeof CURVIEW !== "undefined" && CURVIEW === "news"){
         try { renderNews(); } catch(e){}
+      }
+      // 专题/选题雷达同理：连上之前渲染会少掉「建为专题」这类要写权限的按钮
+      if(typeof CURVIEW !== "undefined" && CURVIEW === "topic"){
+        try { if(typeof renderTopicView === "function") renderTopicView(); } catch(e){}
       }
     }   // 有服务才能露出「正文」这一层
     modeBar();
@@ -4589,7 +4598,7 @@ function renderAnalysis(){
   if(box) box.innerHTML = h;
 }
 var TOPICS = [], TOSEL = null, PICK_MODE = "papers", OV_PID = null, TO_READONLY = false;
-var GAP_TAB = "list", GAP_KIND = "全部";
+var GAP_TAB = "list", GAP_KIND = "全部", GAP_THEME = "", GAP_ROUTE = "";
 
 function toApi(data){
   return fetch("/api/topics", {method: "POST", headers: {"Content-Type": "application/json"},
@@ -4907,12 +4916,33 @@ function openPick(mode){
 
 /* ---------------- 选题雷达（专题研究子标签） ---------------- */
 function gapItems(){ return (DB.gaps && DB.gaps.items) || []; }
+function gapHit(x){
+  if(GAP_KIND !== "全部" && x.kind !== GAP_KIND) return false;
+  if(GAP_THEME && !((x.a_key === "themes" && x.a === GAP_THEME) ||
+                    (x.b_key === "themes" && x.b === GAP_THEME))) return false;
+  if(GAP_ROUTE && !((x.a_key === "routes" && x.a === GAP_ROUTE) ||
+                    (x.b_key === "routes" && x.b === GAP_ROUTE))) return false;
+  return true;
+}
+function gapOpts(map, cur){
+  return '<option value="">全部</option>' + Object.keys(map).sort().map(function(k){
+    return '<option value="' + esc(k) + '"' + (k === cur ? " selected" : "") + '>' + esc(k) + '</option>';
+  }).join("");
+}
 function renderGaps(){
   var box = document.getElementById("gapPanel");
   if(!box) return;
   var G = DB.gaps || {items: [], total: P.length, date: ""};
   var items = G.items || [];
   var kinds = ["全部", "组合空白", "方法空白", "线路断层", "正在升温", "单点依赖"];
+  var themes = {}, routes = {};
+  items.forEach(function(x){
+    if(x.a_key === "themes") themes[x.a] = 1;
+    if(x.b_key === "themes") themes[x.b] = 1;
+    if(x.a_key === "routes") routes[x.a] = 1;
+    if(x.b_key === "routes") routes[x.b] = 1;
+  });
+  var list = items.filter(gapHit);
   var h = '<div class="gaphero"><h2>选题雷达</h2><p class="hint">从库内 <b>' + (G.total || P.length) +
     '</b> 条题录算出来的四类线索：组合空白、线路断层、正在升温、单点依赖。' +
     '分数只表示统计上异常（少有人做 / 涨得快），不代表题目一定有价值——点「看相关文献」再判断。生成于 ' +
@@ -4920,7 +4950,11 @@ function renderGaps(){
   h += '<div class="gapchips">' + kinds.map(function(k){
     return '<span class="gapchip' + (GAP_KIND === k ? " on" : "") + '" data-gapkind="' + esc(k) + '">' + esc(k) + '</span>';
   }).join("") + '</div>';
-  var list = items.filter(function(x){ return GAP_KIND === "全部" || x.kind === GAP_KIND; });
+  h += '<div class="gapfilters">' +
+    '<label>主题 <select id="gapTheme">' + gapOpts(themes, GAP_THEME) + '</select></label>' +
+    '<label>线路 <select id="gapRoute">' + gapOpts(routes, GAP_ROUTE) + '</select></label>' +
+    '<button class="mini" id="gapClear">清空筛选</button>' +
+    '<span class="hint">' + list.length + ' / ' + items.length + ' 条</span></div>';
   h += list.length ? list.map(function(x){
     var i = items.indexOf(x);
     return '<article class="gapcard">' +
@@ -4974,7 +5008,18 @@ function gapToTopic(i){
 (function bindGaps(){
   var box = document.getElementById("viewTopic");
   if(!box) return;
+  var mt0 = (location.search.match(/[?&]gaptheme=([^&]+)/) || [])[1];
+  var mr0 = (location.search.match(/[?&]gaproute=([^&]+)/) || [])[1];
+  if(mt0) GAP_THEME = decodeURIComponent(mt0.replace(/\+/g, " "));
+  if(mr0) GAP_ROUTE = decodeURIComponent(mr0.replace(/\+/g, " "));
+  box.addEventListener("change", function(ev){
+    if(ev.target && ev.target.id === "gapTheme"){ GAP_THEME = ev.target.value; renderGaps(); return; }
+    if(ev.target && ev.target.id === "gapRoute"){ GAP_ROUTE = ev.target.value; renderGaps(); return; }
+  });
   box.addEventListener("click", function(ev){
+    if(ev.target && ev.target.id === "gapClear"){
+      GAP_KIND = "全部"; GAP_THEME = ""; GAP_ROUTE = ""; renderGaps(); return;
+    }
     var t = closestEv(ev.target, "[data-totab]");
     if(t){
       GAP_TAB = t.getAttribute("data-totab");
