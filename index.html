@@ -939,6 +939,19 @@ mark{background:rgba(255,196,0,.35);color:inherit;padding:0 1px;border-radius:2p
   <div class="rbody" id="readBody"></div>
 </div></div>
 
+<div class="overlay iaov" id="iaView">
+  <div class="iabox">
+    <div class="iahead"><b id="iaTitle"></b><button class="mini" data-iaclose="1">关闭</button></div>
+    <div class="iaimg"><img id="iaImg" alt="扫描页"></div>
+    <div class="iafoot">
+      <button class="mini" data-iap="-1">← 上一页</button>
+      <input class="iapn" type="number" min="1" value="1">
+      <span class="iacnt"></span>
+      <button class="mini" data-iap="1">下一页 →</button>
+      <a class="mini" id="iaOpen" target="_blank" rel="noopener">在 IA 打开</a>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="ftOverlay"><div class="panel ftpanel">
   <button id="closeFt" class="xbtn">×</button>
   <h3 id="ftTitle">正文检索</h3>
@@ -1931,35 +1944,8 @@ function openIa(id){
   if(!p || !p.ia || !SRV.on) return;
   IA.ident = p.ia; IA.rec = id; IA.cur = 1; IA.pages = 0; IA.title = p.t || "";
   var ov = document.getElementById("iaView");
-  if(!ov){
-    ov = document.createElement("div");
-    ov.id = "iaView";
-    ov.className = "overlay iaov";
-    ov.innerHTML = '<div class="iabox">' +
-      '<div class="iahead"><b></b><button class="mini" data-iaclose="1">关闭</button></div>' +
-      '<div class="iaimg"><img id="iaImg" alt=""></div>' +
-      '<div class="iafoot"><button class="mini" data-iap="-1">← 上一页</button>' +
-      '<input class="iapn" type="number" min="1" value="1">' +
-      '<span class="iacnt"></span>' +
-      '<button class="mini" data-iap="1">下一页 →</button>' +
-      '<a class="mini" id="iaOpen" target="_blank" rel="noopener">在 IA 打开</a></div></div>';
-    document.body.appendChild(ov);
-    ov.addEventListener("click", function(ev){
-      if(ev.target === ov){ closeIa(); return; }
-      var b = closestEv(ev.target, "[data-iap]");
-      if(b){ iaGo(IA.cur + parseInt(b.getAttribute("data-iap"), 10)); return; }
-      if(closestEv(ev.target, "[data-iaclose]")){ closeIa(); return; }
-    });
-    ov.addEventListener("change", function(ev){
-      if(ev.target.classList.contains("iapn")) iaGo(parseInt(ev.target.value, 10) || 1);
-    });
-    ov.addEventListener("keydown", function(ev){
-      if(ev.key === "ArrowLeft") iaGo(IA.cur - 1);
-      if(ev.key === "ArrowRight") iaGo(IA.cur + 1);
-      if(ev.key === "Escape") closeIa();
-    });
-  }
-  ov.querySelector(".iahead b").textContent = IA.title;
+  if(!ov) return;
+  document.getElementById("iaTitle").textContent = IA.title;
   ov.classList.add("on");
   fetch("/api/ia/meta?id=" + encodeURIComponent(id))
     .then(function(r){ return r.json(); })
@@ -1973,6 +1959,25 @@ function openIa(id){
     })
     .catch(function(e){ toast("读取失败：" + e); });
 }
+(function(){
+  var ov = document.getElementById("iaView");
+  if(!ov) return;
+  ov.addEventListener("click", function(ev){
+    if(ev.target === ov){ closeIa(); return; }
+    var b = closestEv(ev.target, "[data-iap]");
+    if(b){ iaGo(IA.cur + parseInt(b.getAttribute("data-iap"), 10)); return; }
+    if(closestEv(ev.target, "[data-iaclose]")){ closeIa(); return; }
+  });
+  ov.addEventListener("change", function(ev){
+    if(ev.target.classList.contains("iapn")) iaGo(parseInt(ev.target.value, 10) || 1);
+  });
+  document.addEventListener("keydown", function(ev){
+    if(!ov.classList.contains("on")) return;
+    if(ev.key === "ArrowLeft") iaGo(IA.cur - 1);
+    if(ev.key === "ArrowRight") iaGo(IA.cur + 1);
+    if(ev.key === "Escape") closeIa();
+  });
+})();
 
 /* ---------------- 正文检索明细浮层 ---------------- */
 function openFtAll(id){
