@@ -3222,16 +3222,17 @@ function renderNews(d){
   h += '<div class="nbody"><div class="nmain">';
   h += '<article class="brief"><div class="bhead"><span class="btag">今日简报</span>'
      + '<span class="bdate">' + esc(obj.d) + '</span>'
-     + (SRV.on ? '<button class="mini nbedit" id="nbriefEdit">编辑</button>' : '')
+     + (SRV.on ? '<button class="mini nbedit" id="nbriefEdit">编辑简报</button>' : '')
      + '</div><div id="nbriefBody">' + obj.brief + '</div></article>';
   if(SRV.on){
     h += '<div class="nadd"><div class="nadd-h"><b>我看到的</b>' +
-      '<span class="hint">粘一句话、一段文字或一个链接，存进今天的日报（链接会自动抓题名）</span></div>' +
+      '<span class="hint">「加到动态」只新增一条；要让文字进上面的今日简报，点「存为简报」</span></div>' +
       '<textarea id="naddText" rows="2" placeholder="例：某个会议通知、公众号书讯，或「《铁路史研究》第 8 辑有篇讲滇越铁路运价的文章」"></textarea>' +
       '<div class="nadd-up"><button class="mini" id="naddPick" type="button">＋ 图片 / 文件</button>' +
       '<input id="naddFiles" type="file" multiple hidden accept="image/*,.pdf,.doc,.docx,.txt,.md,.xls,.xlsx,.ppt,.pptx,.zip">' +
       '<span id="naddPicked" class="hint">可附截图、会议通知、PDF；最多 6 个，单个 ≤25MB</span></div>' +
-      '<div class="nadd-f"><button class="mini" id="naddBtn">＋ 加到今天</button>' +
+      '<div class="nadd-f"><button class="mini" id="naddBtn">＋ 加到动态</button>' +
+      '<button class="mini" id="nbriefQuick">存为简报</button>' +
       '<span id="naddMsg" class="hint"></span></div></div>';
   }
   h += '<h3 class="nsec">当日动态（' + obj.items.length + "）</h3>";
@@ -3283,6 +3284,7 @@ document.getElementById("viewNews").addEventListener("click", function(ev){
   var t = ev.target;
   if(t && t.id === "naddBtn"){ addNewsNote(); return; }
   if(t && t.id === "nbriefEdit"){ editBrief(); return; }
+  if(t && t.id === "nbriefQuick"){ saveQuickBrief(); return; }
   var ned = closestEv(t, "[data-nedit]");
   if(ned && SRV.on){ NEDIT = ned.getAttribute("data-nedit"); renderNews(); return; }
   var nsv = closestEv(t, "[data-nsave]");
@@ -3338,6 +3340,25 @@ function addNewsNote(){
     })
     .catch(function(e){ if(msg) msg.textContent = "失败：" + e; if(btn) btn.disabled = false; });
 }
+function saveQuickBrief(){
+  var ta = document.getElementById("naddText");
+  var msg = document.getElementById("naddMsg");
+  var text = ta ? (ta.value || "").trim() : "";
+  var day = NPICK || (NEWS.days[0] && NEWS.days[0].d);
+  if(!text){ if(msg) msg.textContent = "先写点东西，再存为简报"; return; }
+  if(!day){ if(msg) msg.textContent = "没有可写的日期"; return; }
+  if(msg) msg.textContent = "存简报中…";
+  fetch("/api/news/brief", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({day: day, text: text})})
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(!j.ok){ if(msg) msg.textContent = j.message || "失败"; return; }
+      toast("已存为 " + day + " 的今日简报");
+      setTimeout(function(){ location.reload(); }, 500);
+    })
+    .catch(function(e){ if(msg) msg.textContent = "失败：" + e; });
+}
+
 function editBrief(){
   var day = NPICK || (NEWS.days[0] && NEWS.days[0].d);
   var body = document.getElementById("nbriefBody");
@@ -3629,16 +3650,17 @@ function renderNews(d){
   h += '<div class="nbody"><div class="nmain">';
   h += '<article class="brief"><div class="bhead"><span class="btag">今日简报</span>'
      + '<span class="bdate">' + esc(obj.d) + '</span>'
-     + (SRV.on ? '<button class="mini nbedit" id="nbriefEdit">编辑</button>' : '')
+     + (SRV.on ? '<button class="mini nbedit" id="nbriefEdit">编辑简报</button>' : '')
      + '</div><div id="nbriefBody">' + obj.brief + '</div></article>';
   if(SRV.on){
     h += '<div class="nadd"><div class="nadd-h"><b>我看到的</b>' +
-      '<span class="hint">粘一句话、一段文字或一个链接，存进今天的日报（链接会自动抓题名）</span></div>' +
+      '<span class="hint">「加到动态」只新增一条；要让文字进上面的今日简报，点「存为简报」</span></div>' +
       '<textarea id="naddText" rows="2" placeholder="例：某个会议通知、公众号书讯，或「《铁路史研究》第 8 辑有篇讲滇越铁路运价的文章」"></textarea>' +
       '<div class="nadd-up"><button class="mini" id="naddPick" type="button">＋ 图片 / 文件</button>' +
       '<input id="naddFiles" type="file" multiple hidden accept="image/*,.pdf,.doc,.docx,.txt,.md,.xls,.xlsx,.ppt,.pptx,.zip">' +
       '<span id="naddPicked" class="hint">可附截图、会议通知、PDF；最多 6 个，单个 ≤25MB</span></div>' +
-      '<div class="nadd-f"><button class="mini" id="naddBtn">＋ 加到今天</button>' +
+      '<div class="nadd-f"><button class="mini" id="naddBtn">＋ 加到动态</button>' +
+      '<button class="mini" id="nbriefQuick">存为简报</button>' +
       '<span id="naddMsg" class="hint"></span></div></div>';
   }
   h += '<h3 class="nsec">当日动态（' + obj.items.length + "）</h3>";
