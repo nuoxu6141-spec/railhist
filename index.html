@@ -367,6 +367,10 @@ body.news-mode .filters,body.news-mode .wrap{display:none}
 .nfld input,.nfld textarea{display:block;width:100%;box-sizing:border-box;margin-top:4px;
   border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;
   background:var(--bg);color:var(--ink)}
+.efiles{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.efile{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px 6px;color:var(--dim)}
+.efile i{cursor:pointer;font-style:normal;margin-left:6px}
+.efile.off{opacity:.45;text-decoration:line-through}
 .nbtext{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;
   padding:8px;font:inherit;line-height:1.6;background:var(--bg);color:var(--ink)}
 .nadd-up{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
@@ -3160,6 +3164,14 @@ function nitem(x){
       '<label class="nfld">标题<input id="nedT" value="' + esc(x.t) + '"></label>' +
       '<label class="nfld">摘要<textarea id="nedS" rows="3">' + esc(x.s || "") + '</textarea></label>' +
       '<label class="nfld">链接<input id="nedU" value="' + esc(x.u || "") + '" placeholder="https://…"></label>' +
+      '<div class="nfld">附件<div class="efiles">' +
+        (x.f || []).map(function(f){
+          return '<span class="efile" data-epath="' + esc(f.p || "") + '">' + esc(f.n) +
+                 '<i data-eremove="1" title="移除">×</i></span>';
+        }).join("") + '</div>' +
+        '<div class="nadd-up"><button class="mini" type="button" id="nedPick">＋ 图片 / 文件</button>' +
+        '<input id="nedFiles" type="file" multiple hidden accept="image/*,.pdf,.doc,.docx,.txt,.md,.xls,.xlsx,.ppt,.pptx,.zip">' +
+        '<span id="nedPicked" class="hint">可追加；最多 6 个，单个 ≤25MB</span></div></div>' +
       '<div class="nadd-f"><button class="mini" data-nsave="' + esc(x.i) + '">保存</button>' +
       '<button class="mini" data-ncancel="1">取消</button><span id="nedMsg" class="hint"></span></div></article>';
   }
@@ -3295,6 +3307,17 @@ document.getElementById("viewNews").addEventListener("click", function(ev){
     if(fi) fi.click();
     return;
   }
+  if(t && t.id === "nedPick"){
+    var nf = document.getElementById("nedFiles");
+    if(nf) nf.click();
+    return;
+  }
+  var erm = closestEv(t, "[data-eremove]");
+  if(erm){
+    var chip = erm.parentNode;
+    if(chip && chip.classList) chip.classList.toggle("off");
+    return;
+  }
   var del = closestEv(t, "[data-ndel]");
   if(del && SRV.on){ delNewsNote(del.getAttribute("data-ndel")); return; }
   var el = t;
@@ -3303,10 +3326,10 @@ document.getElementById("viewNews").addEventListener("click", function(ev){
 });
 document.getElementById("viewNews").addEventListener("change", function(ev){
   var t = ev.target;
-  if(!t || t.id !== "naddFiles") return;
+  if(!t || (t.id !== "naddFiles" && t.id !== "nedFiles")) return;
   var names = [];
   for(var i = 0; i < (t.files || []).length; i++) names.push(t.files[i].name);
-  var p = document.getElementById("naddPicked");
+  var p = document.getElementById(t.id === "nedFiles" ? "nedPicked" : "naddPicked");
   if(p) p.textContent = names.length ? ("已选 " + names.length + " 个：" + names.join("、")) : "可附截图、会议通知、PDF；最多 6 个，单个 ≤25MB";
 });
 
@@ -3390,12 +3413,32 @@ function saveNewsEdit(id){
   var s = document.getElementById("nedS");
   var u = document.getElementById("nedU");
   var msg = document.getElementById("nedMsg");
+  var nf = document.getElementById("nedFiles");
   if(!t || !msg) return;
+  var files = nf && nf.files ? Array.prototype.slice.call(nf.files) : [];
+  var remove = [];
+  var chips = document.querySelectorAll(".efile.off");
+  for(var i = 0; i < chips.length; i++){
+    var p = chips[i].getAttribute("data-epath");
+    if(p) remove.push(p);
+  }
   msg.textContent = "保存中…";
-  fetch("/api/news/edit", {method: "POST", headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({id: id, title: t.value || "", summary: s ? (s.value || "") : "",
-                          url: u ? (u.value || "") : ""})})
-    .then(function(r){ return r.json(); })
+  var req;
+  if(files.length || remove.length){
+    var fd = new FormData();
+    fd.append("id", id);
+    fd.append("title", t.value || "");
+    fd.append("summary", s ? (s.value || "") : "");
+    fd.append("url", u ? (u.value || "") : "");
+    fd.append("remove", JSON.stringify(remove));
+    files.slice(0, 6).forEach(function(f){ fd.append("file", f, f.name); });
+    req = fetch("/api/news/edit", {method: "POST", body: fd});
+  } else {
+    req = fetch("/api/news/edit", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({id: id, title: t.value || "", summary: s ? (s.value || "") : "",
+                            url: u ? (u.value || "") : ""})});
+  }
+  req.then(function(r){ return r.json(); })
     .then(function(j){ if(!j.ok){ msg.textContent = j.message || "失败"; return; } location.reload(); })
     .catch(function(e){ msg.textContent = "失败：" + e; });
 }
