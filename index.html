@@ -3177,14 +3177,15 @@ document.getElementById('readBody').addEventListener('click', function(ev){
 });
 
 /* ---------------- 学术资讯 ---------------- */
-var NPICK = NEWS.days.length ? NEWS.days[0].d : "";
+var NDAYS = NEWS.days.filter(function(x){ return x.n > 0; });
+var NPICK = NDAYS.length ? NDAYS[0].d : (NEWS.days[0] || {}).d || "";
 var NEDIT = null;
 
 function newsDay(d){
   for(var i = 0; i < NEWS.days.length; i++){ if(NEWS.days[i].d === d) return NEWS.days[i]; }
   return null;
 }
-function nitem(x){
+function nitem(x, day){
   if(NEDIT && x.i && NEDIT === x.i){
     return '<article class="nitem nedit"><div class="nhead"><span class="kind">编辑动态</span></div>' +
       '<label class="nfld">标题<input id="nedT" value="' + esc(x.t) + '"></label>' +
@@ -3210,11 +3211,14 @@ function nitem(x){
     }
     h += '<i class="nedit" data-nedit="' + esc(x.i) + '" title="编辑这条">✎</i></span>';
   }
-  if(x.p) h += '<span class="npub">' + esc(x.p) + "</span>";
+  var shown = day || x.p;
+  if(shown) h += '<span class="npub">' + esc(shown) + "</span>";
   if(x.src) h += '<span class="nsrc">' + esc(x.src) + "</span>";
   h += "</div>";
   h += "<h4>" + (x.u ? '<a href="' + esc(x.u) + '" target="_blank" rel="noopener">' + esc(x.t) + "</a>" : esc(x.t)) + "</h4>";
-  var meta = [x.a, x.j].filter(Boolean).join(" · ");
+  var meta = [x.a, x.j].filter(Boolean);
+  if(x.p && day && x.p !== day) meta.push("发布 " + x.p);
+  meta = meta.join(" · ");
   if(meta) h += '<p class="nmeta">' + esc(meta) + "</p>";
   if(x.e) h += '<p class="nextra">' + esc(x.e) + "</p>";
   if(x.s) h += '<p class="nsum">' + esc(x.s) + "</p>";
@@ -3245,7 +3249,7 @@ function renderNews(d){
   var obj = newsDay(day) || NEWS.days[0];
   NPICK = obj.d;
   var h = '<div class="nhero"><div><h2>学术日报</h2>'
-        + '<p class="hint">最近 ' + NEWS.days.length + ' 天 · 共 ' + NEWS.total + ' 条 · 更新 ' + esc(NEWS.updated || ST.date)
+        + '<p class="hint">最近 ' + NDAYS.length + ' 天 · 共 ' + NEWS.total + ' 条 · 更新 ' + esc(NEWS.updated || ST.date)
         + (DB.news_state && DB.news_state.last_checked
             ? ' · 最近采集 ' + esc(DB.news_state.last_checked) + '（新增 ' + (DB.news_state.added || 0) + ' 条）'
             : '')
@@ -3253,7 +3257,7 @@ function renderNews(d){
         + '<div class="nhero-r">'
         + '<button class="mini" id="newsRun"' + (SRV.on ? "" : ' disabled title="先在本地服务下打开"') +
           '>更新学术日报</button>'
-        + '<div class="nswitch">' + NEWS.days.slice(0, 8).map(function(x){
+        + '<div class="nswitch">' + NDAYS.slice(0, 8).map(function(x){
             return '<span class="nday' + (x.d === obj.d ? " on" : "") + '" data-nday="' + esc(x.d) + '">'
               + esc(x.d.slice(5)) + '<i>' + x.n + '</i></span>';
           }).join("") + "</div></div></div>";
@@ -3273,10 +3277,10 @@ function renderNews(d){
       '<span id="naddMsg" class="hint"></span></div></div>';
   }
   h += '<h3 class="nsec">当日动态（' + obj.items.length + "）</h3>";
-  h += obj.items.length ? obj.items.map(nitem).join("") : '<p class="hint">这一天没有采到条目。</p>';
+  h += obj.items.length ? obj.items.map(function(x){ return nitem(x, obj.d); }).join("") : '<p class="hint">这一天没有采到条目。</p>';
   h += "</div><aside class=\"nside\">";
   h += '<h4>按日归档</h4><div class="ndays">';
-  NEWS.days.forEach(function(x){
+  NDAYS.forEach(function(x){
     h += '<span class="nday2' + (x.d === obj.d ? " on" : "") + '" data-nday="' + esc(x.d) + '">'
        + esc(x.d) + '<i>' + x.n + " 条</i></span>";
   });
@@ -3709,7 +3713,7 @@ function renderNews(d){
   var obj = newsDay(day) || NEWS.days[0];
   NPICK = obj.d;
   var h = '<div class="nhero"><div><h2>学术日报</h2>'
-        + '<p class="hint">最近 ' + NEWS.days.length + ' 天 · 共 ' + NEWS.total + ' 条 · 更新 ' + esc(NEWS.updated || ST.date)
+        + '<p class="hint">最近 ' + NDAYS.length + ' 天 · 共 ' + NEWS.total + ' 条 · 更新 ' + esc(NEWS.updated || ST.date)
         + (DB.news_state && DB.news_state.last_checked
             ? ' · 最近采集 ' + esc(DB.news_state.last_checked) + '（新增 ' + (DB.news_state.added || 0) + ' 条）'
             : '')
@@ -3717,7 +3721,7 @@ function renderNews(d){
         + '<div class="nhero-r">'
         + '<button class="mini" id="newsRun"' + (SRV.on ? "" : ' disabled title="先在本地服务下打开"') +
           '>更新学术日报</button>'
-        + '<div class="nswitch">' + NEWS.days.slice(0, 8).map(function(x){
+        + '<div class="nswitch">' + NDAYS.slice(0, 8).map(function(x){
             return '<span class="nday' + (x.d === obj.d ? " on" : "") + '" data-nday="' + esc(x.d) + '">'
               + esc(x.d.slice(5)) + '<i>' + x.n + '</i></span>';
           }).join("") + "</div></div></div>";
@@ -3737,10 +3741,10 @@ function renderNews(d){
       '<span id="naddMsg" class="hint"></span></div></div>';
   }
   h += '<h3 class="nsec">当日动态（' + obj.items.length + "）</h3>";
-  h += obj.items.length ? obj.items.map(nitem).join("") : '<p class="hint">这一天没有采到条目。</p>';
+  h += obj.items.length ? obj.items.map(function(x){ return nitem(x, obj.d); }).join("") : '<p class="hint">这一天没有采到条目。</p>';
   h += "</div><aside class=\"nside\">";
   h += '<h4>按日归档</h4><div class="ndays">';
-  NEWS.days.forEach(function(x){
+  NDAYS.forEach(function(x){
     h += '<span class="nday2' + (x.d === obj.d ? " on" : "") + '" data-nday="' + esc(x.d) + '">'
        + esc(x.d) + '<i>' + x.n + " 条</i></span>";
   });
