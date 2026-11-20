@@ -3249,7 +3249,7 @@ function renderNews(d){
   var obj = newsDay(day) || NEWS.days[0];
   NPICK = obj.d;
   var h = '<div class="nhero"><div><h2>学术日报</h2>'
-        + '<p class="hint">最近 ' + NDAYS.length + ' 天 · 共 ' + NEWS.total + ' 条 · 更新 ' + esc(NEWS.updated || ST.date)
+        + '<p class="hint">共 ' + NDAYS.length + ' 个日期 · 共 ' + NEWS.total + ' 条 · 更新 ' + esc(NEWS.updated || ST.date)
         + (DB.news_state && DB.news_state.last_checked
             ? ' · 最近采集 ' + esc(DB.news_state.last_checked) + '（新增 ' + (DB.news_state.added || 0) + ' 条）'
             : '')
@@ -3713,7 +3713,7 @@ function renderNews(d){
   var obj = newsDay(day) || NEWS.days[0];
   NPICK = obj.d;
   var h = '<div class="nhero"><div><h2>学术日报</h2>'
-        + '<p class="hint">最近 ' + NDAYS.length + ' 天 · 共 ' + NEWS.total + ' 条 · 更新 ' + esc(NEWS.updated || ST.date)
+        + '<p class="hint">共 ' + NDAYS.length + ' 个日期 · 共 ' + NEWS.total + ' 条 · 更新 ' + esc(NEWS.updated || ST.date)
         + (DB.news_state && DB.news_state.last_checked
             ? ' · 最近采集 ' + esc(DB.news_state.last_checked) + '（新增 ' + (DB.news_state.added || 0) + ' 条）'
             : '')
